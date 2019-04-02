@@ -1,5 +1,5 @@
 # isms-golang
-ISMS Microservice + RabbitMQ + CloudAMPQ which still Work in Progress :). This package should be run in background as background process. 
+ISMS Microservice + RabbitMQ + CloudAMPQ which still Work in Progress :). This package should be run as a background process. 
 
 The ideas is simple, imagine we have one main web application running on top of PHP or any other languages. Instead of calling directly SMS API using HTTP handler from main application(also called the producer), the main application should invoke the RabbitMQ message broker to queue a message along with the "receiver - receiver here is the one who will receive the SMS".
 
