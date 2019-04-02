@@ -47,11 +47,11 @@ func main() {
 
 			switch contact.Type {
 				case "send_sms":
-					sms.Send(contact)
+					sms.SendDirectSMS(contact)
 				case "check_balance":
-					// In progress
+					sms.CheckBalance(contact);
 				default:
-					sms.Send(contact)
+					sms.SendDirectSMS(contact)
 			}
 		}
 	}()

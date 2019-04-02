@@ -3,6 +3,8 @@ package util
 import (
 	"github.com/joho/godotenv"
 	"encoding/json"
+	"io/ioutil"
+	"net/http"
 	"net/url"
 	"strings"
 	"log"
@@ -55,11 +57,31 @@ func LoadEnv() {
 	}
 }
 
-// Populate URL and form query string to call the final ISMS api.
-func PopulateUrl(contact *Contact) string {
-	ismsUrl := os.Getenv("ISMS_BASE_URL")
+// Check balance URL.
+func (contact *Contact) CheckBalanceUrl() (*url.URL) {
+	smsUrl := os.Getenv("SMS_BASE_URL") + os.Getenv("SMS_CHECK_BALANCE_URL")
+	url, queryString := contact.DefaultQueryString(smsUrl)
+	url.RawQuery = queryString.Encode()
 
-	baseUrl, err := url.Parse(ismsUrl)
+	return url
+}
+
+// Sending Simple SMS and TAC url.
+func (contact *Contact) DirectUrl() (*url.URL) {
+	smsUrl := os.Getenv("SMS_BASE_URL") + os.Getenv("SMS_SEND_URL")
+	url, queryString := contact.DefaultQueryString(smsUrl)
+	queryString.Set("mobile", contact.Phone)
+	queryString.Set("message", contact.Prefix + ":" + contact.Message)
+	queryString.Set("type", "1")
+	queryString.Set("sender", os.Getenv("SMS_USERNAME"))
+	url.RawQuery = queryString.Encode()
+
+	return url
+}
+
+// Populate URL and form query string to call the final SMS api.
+func (contact *Contact) DefaultQueryString(baseUrl string) (*url.URL, url.Values) {
+	smsUrl, err := url.Parse(baseUrl)
 
 	if err != nil {
 		FailResponse(err, "Malformed URL")
@@ -68,18 +90,31 @@ func PopulateUrl(contact *Contact) string {
 	queryString := url.Values{}
 
 	if contact.Username == "" {
-		queryString.Set("un", os.Getenv("ISMS_USERNAME"))
+		queryString.Set("username", os.Getenv("SMS_USERNAME"))
 	}
 
 	if contact.Password == "" {
-		queryString.Set("pwd", os.Getenv("ISMS_PASSWORD"))
+		queryString.Set("password", os.Getenv("SMS_PASSWORD"))
 	}
 
-	queryString.Set("dstno", contact.Phone)
-	queryString.Set("msg", contact.Prefix + ":" + contact.Message)
-	queryString.Set("type", "1")
+	if contact.Prefix == "" {
+		contact.Prefix = os.Getenv("SMS_MESSAGE_PREFIX")
+	}
 
-	baseUrl.RawQuery = queryString.Encode()
+	return smsUrl, queryString
+}
 
-	return baseUrl.String()
+// Send sms into mobile number doesnt matter by
+// direct SMS or TAC. Just send it anyway.
+func (contact *Contact) Send(url string) []byte {
+	response, err := http.Get(url)
+
+	if err != nil {
+		FailResponse(err, "Error sending SMS or checking balance")
+	}
+	defer response.Body.Close()
+
+	body, err := ioutil.ReadAll(response.Body)
+
+	return body
 }

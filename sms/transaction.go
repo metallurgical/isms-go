@@ -2,14 +2,17 @@ package sms
 
 import (
 	"isms/sms/util"
-	"fmt"
 )
 
-// Send SMS layer.
-func Send(contact util.Contact) {
-	contact = contact.ValidatedPhone()
+// Send direct SMS layer.
+func SendDirectSMS(contact util.Contact) {
+	contact.ValidatedPhone()
+	url := contact.DirectUrl()
+	contact.Send(url.String())
+}
 
-	url := util.PopulateUrl(&contact)
-
-	fmt.Println(url)
+// Check credit balance layer.
+func CheckBalance(contact util.Contact) {
+	url := contact.CheckBalanceUrl()
+	contact.Send(url.String())
 }
